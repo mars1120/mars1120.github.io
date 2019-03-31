@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search> 
+  
+  
+    
+    <entry>
+      <title>jenkins整合Firebase TestLab</title>
+      <link href="/2019/03/31/jenkins%E6%95%B4%E5%90%88Firebase-TestLab/"/>
+      <url>/2019/03/31/jenkins%E6%95%B4%E5%90%88Firebase-TestLab/</url>
+      
+        <content type="html"><![CDATA[<p>這篇文章會簡單介紹如何使用firebase testlab<br>以及如何整合到裝在windows的jenkins上<br><a id="more"></a></p><h3 id="必要條件"><a href="#必要條件" class="headerlink" title="必要條件"></a>必要條件</h3><p>1.GCP專案<br>2.串連Firebase專案(需綁信用卡 否則firebase testlab不能用)<br>3.gcloud SDK<br>4.一份sample code<br>5.Android studio (可選)</p><h3 id="注意事項"><a href="#注意事項" class="headerlink" title="注意事項"></a>注意事項</h3><p>由於本篇內容的jenkins建置在windows上<br>所以請注意檔案路徑的設置(斜線”/“與”\”可能需要調整)<br>以及cmd指令可能略有不同<br><del>為什麼要建在pc上？ 因為上班不務正業偷弄的</del></p><p>本文請配合以下文章服用<br><a href="https://codelabs.developers.google.com/codelabs/firebase-test-lab/index.html" target="_blank" rel="noopener">https://codelabs.developers.google.com/codelabs/firebase-test-lab/index.html</a></p><h3 id="取得範例sample-code"><a href="#取得範例sample-code" class="headerlink" title="取得範例sample code"></a>取得範例sample code</h3><p>這裡直接拿google提供的範例程式碼來用</p><p>Github下載連結: <a href="https://github.com/googlesamples/android-testing/archive/master.zip" target="_blank" rel="noopener">點我</a><br>或是用git cmd直接抓下來</p><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git clone https://github.com/googlesamples/android-testing.git</span><br></pre></td></tr></table></figure><p>該連結底下還有數個專案<br>但本文只會用到 …/ui/espresso/BasicSample 這個project</p><h3 id="Build-app-and-Test-APKs"><a href="#Build-app-and-Test-APKs" class="headerlink" title="Build app and Test APKs"></a>Build app and Test APKs</h3><p>1.開啟Android studio<br>2.import BasicSample<br>3.在下方選單terminal輸入</p><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gradlew :app:assembleDebugAndroidTest</span><br></pre></td></tr></table></figure><p>檔案會生成在</p><p>BasicSample/app/build/outputs/apk/debug/<br>BasicSample/app/build/outputs/apk/androidTest/debug/</p><p>此時可以把生成的檔案丟到firebase testlab 做測試<br>Codelab教程: <a href="https://codelabs.developers.google.com/codelabs/firebase-test-lab/index.html#2" target="_blank" rel="noopener">步驟3</a></p><p>註：如果找不到選項在哪 可將firebase console介面改為英文的<br>方式是在網址尾端加上?hl=en</p><p>例如<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">https://console.firebase.google.com/project/projectname/storage/projectname.appspot.com/files?hl=en</span><br></pre></td></tr></table></figure></p><h3 id="用command-line來運行Firebase-TestLab"><a href="#用command-line來運行Firebase-TestLab" class="headerlink" title="用command-line來運行Firebase TestLab"></a>用command-line來運行Firebase TestLab</h3><p>Codelab教程: <a href="https://codelabs.developers.google.com/codelabs/firebase-test-lab/index.html#4" target="_blank" rel="noopener">步驟5</a><br>裡面的cmd有些已經更新了 附一下我的步驟與cmd<br>1.去GCP啟用<strong>Cloud Testing API</strong> 及 <strong>Tool Results API</strong><br>2.利用GCP生成一個該專案用的Authorization key.json<br>3.用系統權限開啟cmd<br>4.依序輸入以下內容</p><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcloud auth activate-service-account --key-file D:\token\projectname-1987cf597d5b.json</span><br></pre></td></tr></table></figure><p>最後是檔案路徑 自行調整</p><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcloud config set project projectname</span><br></pre></td></tr></table></figure><p>projectname=GCP專案名稱</p><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcloud firebase test android run --app ui\uiautomator\BasicSample\app\build\outputs\apk\debug\app-debug.apk --test ui\uiautomator\BasicSample\app\build\outputs\apk\androidTest\debug\app-debug-androidTest.apk</span><br></pre></td></tr></table></figure><p>最後兩個是apk 以及test apk路徑(注意 不同as版本生成的APK路徑可能不一樣)</p><p>成功後便能在firebase的網頁上看到這次測試的資訊</p><h3 id="整合到jenkins上"><a href="#整合到jenkins上" class="headerlink" title="整合到jenkins上"></a>整合到jenkins上</h3><p>前面用cmd做測試的步驟完成 那就可以將這些指令移植到jenkins上<br>如果使用本文提供的範例code 由於專案路徑的問題<br>需要設定root project<br>另外gradle根據使用的版本做調整 另外記得要確保設定為全域變數<br>以下附上一些設定的參考圖<br><img src="/2019/03/31/jenkins整合Firebase-TestLab/gradle1.png"><br><img src="/2019/03/31/jenkins整合Firebase-TestLab/gradle2.png"><br><img src="/2019/03/31/jenkins整合Firebase-TestLab/globaltool.png"><br><img src="/2019/03/31/jenkins整合Firebase-TestLab/wcmd.png"></p><p>最後成功的結果<br><img src="/2019/03/31/jenkins整合Firebase-TestLab/flabresult.png"><br>一些測試的數據會一併上傳到GCP<br>如果有需要可將相關資訊做加工生成圖表 <del>或是槍斃提這需求的人</del></p>]]></content>
+      
+      
+      <categories>
+          
+          <category> Devops </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Android </tag>
+            
+            <tag> Jenkins </tag>
+            
+            <tag> GCP </tag>
+            
+            <tag> Firebase </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>Hello World</title>
+      <link href="/2019/02/13/hello-world/"/>
+      <url>/2019/02/13/hello-world/</url>
+      
+        <content type="html"><![CDATA[<p>Welcome to <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/" target="_blank" rel="noopener">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html" target="_blank" rel="noopener">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues" target="_blank" rel="noopener">GitHub</a>.</p><h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">"My New Post"</span></span><br></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/writing.html" target="_blank" rel="noopener">Writing</a></p><h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/server.html" target="_blank" rel="noopener">Server</a></p><h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/generating.html" target="_blank" rel="noopener">Generating</a></p><h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/deployment.html" target="_blank" rel="noopener">Deployment</a></p>]]></content>
+      
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>測試</title>
+      <link href="/2019/01/14/%E6%B8%AC%E8%A9%A6/"/>
+      <url>/2019/01/14/%E6%B8%AC%E8%A9%A6/</url>
+      
+        <content type="html"><![CDATA[<p>麥克風試音<br>預預預預預預預預預預預預預預<br><a id="more"></a><br>覽<br><img src="/2019/01/14/測試/test.gif"><br><img src="/2019/01/14/測試/test.jpg"></p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 未分類 </category>
+          
+          <category> 廢棄物 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> useless </tag>
+            
+            <tag> test </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+  
+  
+</search>
